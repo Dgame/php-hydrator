@@ -1,0 +1,5 @@
+*.lock
+vendor
+.idea
+tags
+/logs/*
