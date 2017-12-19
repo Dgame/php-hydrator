@@ -1,4 +1,5 @@
 {
+    "name": "dgame/php-hydrator",
     "license": "MIT",
     "type": "library",
     "keywords": [],
