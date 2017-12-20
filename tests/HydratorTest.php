@@ -12,71 +12,70 @@ use PHPUnit\Framework\TestCase;
  */
 final class HydratorTest extends TestCase
 {
-    public function testHydration()
+    private function getObject()
     {
-        $object = new class()
+        return new class()
         {
             public  $foo;
             private $bar;
             private $lastUsage;
 
-            public function setFoo($value): void
+            public function setFoo(string $value): void
             {
-                print 'setFoo' . PHP_EOL;
                 $this->foo = $value;
             }
 
-            public function setBar($value): void
+            public function setBar(int $value): void
             {
-                print 'setBar' . PHP_EOL;
                 $this->bar = $value;
             }
 
             public function setLastUsage(DateTime $usage): void
             {
-                print 'setLastUsage' . PHP_EOL;
                 $this->lastUsage = $usage;
             }
 
-            /**
-             * @return mixed
-             */
-            public function getFoo()
+            public function getFoo(): string
             {
                 return $this->foo;
             }
 
-            /**
-             * @return mixed
-             */
-            public function getBar()
+            public function getBar(): int
             {
                 return $this->bar;
             }
 
-            /**
-             * @return DateTime
-             */
             public function getLastUsage(): DateTime
             {
                 return $this->lastUsage;
             }
         };
+    }
 
-        ob_start();
+    public function testExtractionOfFullAssignedObject()
+    {
         $hydrator = new Hydrator();
         $hydrator->setAliase(['last-usage' => 'lastUsage']);
         $hydrator->setCallback('lastUsage', function (string $date): DateTime {
             return new DateTime($date);
         });
-        $obj     = $hydrator->hydrate($object, ['foo' => 42, 'bar' => 'hufflepuff', 'last-usage' => '12.07.2008']);
-        $content = ob_get_clean();
 
-        $this->assertSame($object, $obj);
-        $this->assertEquals(42, $obj->foo);
-        $this->assertEquals(42, $obj->getFoo());
-        $this->assertEquals('hufflepuff', $obj->getBar());
-        $this->assertEquals('12.07.2008', $obj->getLastUsage()->format('d.m.Y'));
-        $this->assertEquals(['setBar', 'setLastUsage'], array_filter(explode(PHP_EOL, $content)));
+        $values = ['foo' => 'abc', 'bar' => 42, 'last-usage' => '12.07.2008'];
+        $object = $hydrator->hydrate($this->getObject(), $values);
+
+        $hydrator->setAliase(['lastUsage' => 'last-usage']);
+        $hydrator->setCallback('last-usage', function (DateTime $date): string {
+            return $date->format('d.m.Y');
+        });
+        $result = $hydrator->extract($object);
+
+        $this->assertEquals($values, $result);
+    }
+
+    public function testExtractionOfNonAssignedObject()
+    {
+        $hydrator = new Hydrator();
+        $result   = $hydrator->extract($this->getObject());
+        $this->assertEmpty(array_filter($result));
     }
 }

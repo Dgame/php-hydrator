@@ -153,4 +153,29 @@ final class Hydrator
 
         return $value;
     }
+
+    /**
+     * @param object $object
+     *
+     * @return array
+     */
+    public function extract($object): array
+    {
+        $facade = new ObjectFacade($object);
+        $values = [];
+        foreach ($facade->getReflection()->getProperties() as $property) {
+            $name  = $property->getName();
+            $alias = $this->resolveAlias($name);
+            if ($this->isIgnored($alias)) {
+                continue;
+            }
+
+            $value = $facade->getValue($name);
+            $value = $this->applyCallback($alias, $value);
+
+            $values[$alias] = $value;
+        }
+
+        return $values;
+    }
 }
